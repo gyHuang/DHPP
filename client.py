@@ -2,10 +2,10 @@ __author__ = 'Administrator'
 import socket
 from PyQt4 import QtCore
 import struct
-import threading
+from PyQt4.QtCore import QThread
 
 
-class clientThread(threading.Thread,QtCore.QObject):
+class clientThread(QThread):
     rec_sin = QtCore.pyqtSignal(list)
 
     def __init__(self, lock):
@@ -13,20 +13,22 @@ class clientThread(threading.Thread,QtCore.QObject):
         # host = socket.gethostbyaddr()
         host = socket.gethostname()
         port = 9999
-        self.lock = lock
         self.receive_msg = []
         self.s = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
         self.s.connect((host, port))
+        self.is_run = False
+
+    def my_start(self):
+        self.is_run = True
+        self.start()
 
     def run(self):
-        while self.is_alive():
+        while self.is_run:
             while True:
-                if self.lock.acquire():
-                    print('The client has acquired the lock')
-                    signal = struct.unpack('b', self.s.recv(1))
-                    if signal == 2:
-                        self.receive()
-                    self.lock.release()
+                print('The client has acquired the lock')
+                signal = struct.unpack('b', self.s.recv(1))
+                if signal == 2:
+                    self.receive()
 
     def send(self, heading, msg):
         print('The client is sending data to the server')
