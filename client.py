@@ -10,9 +10,10 @@ class clientThread(QThread):
 
     def __init__(self):
         super(clientThread, self).__init__()
-        # host = socket.gethostbyaddr()
-        host = socket.gethostname()
-        port = 9999
+        host = '158.132.11.182'
+        #host = socket.gethostbyaddr('158.132.11.182')
+        # host = socket.gethostname()
+        port = 25002
         self.receive_msg = []
         self.s = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
         self.s.connect((host, port))

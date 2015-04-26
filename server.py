@@ -14,7 +14,7 @@ import threading
 import struct
 
 host = socket.gethostname()  # Symbolic name meaning all available interfaces
-port = 9999  # Arbitrary non-privileged port
+port = 25002  # Arbitrary non-privileged port
 s = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
 s.bind((host, port))
 s.listen(5)
