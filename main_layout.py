@@ -19,12 +19,14 @@ class Window(QtGui.QWidget):
 
 
     def initUI(self):
-        self.button = QtGui.QPushButton('send')
-        self.friend = QtGui.QPushButton('friend')
-        self.myid = QtGui.QPushButton('my id')
-        self.con = QtGui.QPushButton('connect')
+        self.button = QtGui.QPushButton('Send')
+        self.friend = QtGui.QPushButton('Friend')
+        self.myid = QtGui.QPushButton('My id')
+        self.con = QtGui.QPushButton('Connect')
         self.inp = QtGui.QLineEdit()
         self.disp = QtGui.QLabel()
+        self.instruction = QtGui.QLabel(
+            'Instruction:\n "My id":get your own id;\n "Friend":get all the friends on line;\n "Connect":get connection to the friend you type in the editor;\n "Send":send the message to the friend you just connected.')
 
         hbox = QtGui.QHBoxLayout()
         hbox.addWidget(self.button)
@@ -33,6 +35,7 @@ class Window(QtGui.QWidget):
         hbox.addWidget(self.con)
 
         vbox = QtGui.QVBoxLayout()
+        vbox.addWidget(self.instruction)
         vbox.addWidget(self.disp)
         vbox.addWidget(self.inp)
         vbox.addLayout(hbox)
@@ -82,7 +85,7 @@ class Window(QtGui.QWidget):
 
         # app = QtGui.QApplication(sys.argv)
 
-        #win = Window()
-        #win.show()
+        # win = Window()
+        # win.show()
 
-        #sys.exit(app.exec_())
+        # sys.exit(app.exec_())

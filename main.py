@@ -10,8 +10,8 @@ lock = threading.Lock()
 
 app = QtGui.QApplication(sys.argv)
 
-user = client.clientThread(lock)
-user.start()
+user = client.clientThread()
+user.my_start()
 
 win = main_layout.Window()
 win.show()
@@ -19,5 +19,5 @@ win.show()
 user.rec_sin.connect(win.layout_disp)
 win.sin.connect(user.send)
 
-thread_client = client.client()
+
 sys.exit(app.exec_())

@@ -20,25 +20,36 @@ s.bind((host, port))
 s.listen(5)
 index = 1
 lock = threading.Lock()
-lst = dict()
+lst = dict()  # mapping each client's id with its thread, socket and address
 
 
 class serverThread(threading.Thread):
-    def __init__(self, index, connection, address):
-        super(serverThread, self).__init__(name=str(index))
-        self.index = index
+
+    def __init__(self, ind, connection, address):
+        super(serverThread, self).__init__(name=str(ind))
+        self.index = ind
         self.conn = connection
         self.addr = address
+        self.is_run = False
+        global lock
+        global lst
+
+    def my_start(self):
+        self.is_run = True
+        self.start()
+
+    def my_stop(self):
+        print('The client''s my_stop')
+        self.is_run = False
 
     def run(self):
-        while self.is_alive():
-            if lock.acquire():
-                print('The server has acquired the lock')
+        while self.is_run:
+            print('The server''s run function')
+            try:
                 self.receive()
-                # self.sendTo()
-                lock.release()
-                print('The server has release the lock')
-
+            except:
+                self.my_stop()
+            # self.sendTo()
 
     def receive(self):
         print('The server''s receive function')
@@ -53,7 +64,10 @@ class serverThread(threading.Thread):
 
             if data[0] == 1:
                 print('Ask for all the ids')
-                id = list(lst)  # get all the id from the dictionary "lst"
+                while lock.acquire():
+                    id = list(lst)  # get all the id from the dictionary "lst"
+                    lock.release()
+                    break
                 content = str(len(
                     id)) + ' '  # put the length of the len(id) at the head of the string and separate the id element by space_key
                 for i in range(len(id)):
@@ -76,9 +90,12 @@ class serverThread(threading.Thread):
 
     def sendTo(self, data, content):
         print('The server is sending data to the client')
-        receiver = lst[data[2]]
+        while lock.acquire():
+            receiver = lst[data[2]]
+            lock.release()
+            break
         msg = struct.pack('bbb', data[0], data[1], data[2])
-        signal = struct.pack('b', 2)   # notify the client to receive the signal
+        signal = struct.pack('b', 2)  # notify the client to receive the signal
         receiver[1].send(signal)
         receiver[1].send(msg)
         receiver[1].send(content)
@@ -88,6 +105,6 @@ while True:
     conn, addr = s.accept()
     print('Connected by', addr)
     t = serverThread(index, conn, addr)
-    t.start()
+    t.my_start()
     lst[index] = [t, conn, addr]
     index += 1

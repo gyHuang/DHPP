@@ -8,7 +8,7 @@ from PyQt4.QtCore import QThread
 class clientThread(QThread):
     rec_sin = QtCore.pyqtSignal(list)
 
-    def __init__(self, lock):
+    def __init__(self):
         super(clientThread, self).__init__()
         # host = socket.gethostbyaddr()
         host = socket.gethostname()
@@ -22,12 +22,16 @@ class clientThread(QThread):
         self.is_run = True
         self.start()
 
+    def my_stop(self):
+        self.is_run = False
+
     def run(self):
         while self.is_run:
             while True:
-                print('The client has acquired the lock')
+                print('The client''s run function')
                 signal = struct.unpack('b', self.s.recv(1))
-                if signal == 2:
+                print(signal[0])
+                if signal[0] == 2:
                     self.receive()
 
     def send(self, heading, msg):
@@ -46,7 +50,4 @@ class clientThread(QThread):
         self.data = self.data.decode('ascii')
         self.receive_msg.append(self.data)
         self.rec_sin.emit(self.receive_msg)
-
-    def close(self):
-        self.s.close()
 
