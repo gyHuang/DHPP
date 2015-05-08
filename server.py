@@ -12,9 +12,11 @@ type | length | receiver | content
 import socket
 import threading
 import struct
+import traceback
 
 host = socket.gethostname()  # Symbolic name meaning all available interfaces
-port = 25002  # Arbitrary non-privileged port
+# port = 25002  # Arbitrary non-privileged port
+port = 9999
 s = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
 s.bind((host, port))
 s.listen(5)
@@ -24,15 +26,14 @@ lst = dict()  # mapping each client's id with its thread, socket and address
 
 
 class serverThread(threading.Thread):
-
-    def __init__(self, ind, connection, address):
+    def __init__(self, ind, connection, address, lock, lst):
         super(serverThread, self).__init__(name=str(ind))
         self.index = ind
         self.conn = connection
         self.addr = address
+        self.lock = lock
+        self.lst = lst
         self.is_run = False
-        global lock
-        global lst
 
     def my_start(self):
         self.is_run = True
@@ -41,22 +42,39 @@ class serverThread(threading.Thread):
     def my_stop(self):
         print('The client''s my_stop')
         self.is_run = False
+        self.lst.pop(self.index)
 
     def run(self):
         while self.is_run:
             print('The server''s run function')
             try:
-                self.receive()
+                self.receive_msg()
             except:
+                traceback.print_exc()
                 self.my_stop()
-            # self.sendTo()
 
-    def receive(self):
+                # self.sendTo()
+
+    def receive(self,size):
+        buf = b""
         print('The server''s receive function')
-        data = list(struct.unpack('bbb', self.conn.recv(3)))
+        while len(buf)<size:
+            data = self.conn.recv(size-len(buf))
+            if len(data) == 0:
+                print('Client has closed the socket')
+                raise Exception('Client has closed the socket')
+            buf += data
+        return (buf)
+
+
+    def receive_msg(self):
+        buf = self.receive(6)
+
+        data = list(struct.unpack('>HHH',buf))
+        print('The server is receiving data', data)
         length = data[1]
         if length:
-            content = self.conn.recv(length)
+            content = self.receive(length)
 
         if data[0] != 3:
             print('setting information')
@@ -64,10 +82,9 @@ class serverThread(threading.Thread):
 
             if data[0] == 1:
                 print('Ask for all the ids')
-                while lock.acquire():
-                    id = list(lst)  # get all the id from the dictionary "lst"
-                    lock.release()
-                    break
+                self.lock.acquire()
+                id = list(self.lst)  # get all the id from the dictionary "lst"
+                self.lock.release()
                 content = str(len(
                     id)) + ' '  # put the length of the len(id) at the head of the string and separate the id element by space_key
                 for i in range(len(id)):
@@ -81,30 +98,31 @@ class serverThread(threading.Thread):
                 print('Ask for connection')
                 content = 'Getting a connection from ' + str(content.decode('ascii'))
 
-            data[1] = len(content)
             content = content.encode('ascii')
+            data[1] = len(content)
 
         print('ready to call the server''s sendTo function')
         self.sendTo(data, content)
 
-
     def sendTo(self, data, content):
-        print('The server is sending data to the client')
-        while lock.acquire():
-            receiver = lst[data[2]]
-            lock.release()
-            break
-        msg = struct.pack('bbb', data[0], data[1], data[2])
-        signal = struct.pack('b', 2)  # notify the client to receive the signal
-        receiver[1].send(signal)
+        print('The server is sending data to the client', data)
+        self.lock.acquire()
+        receiver = self.lst[data[2]]
+        self.lock.release()
+        msg = struct.pack('>HHH', data[0], data[1], data[2])
+        #signal = struct.pack('h', 2)  # notify the client to receive the signal
+        #receiver[1].send(signal)
         receiver[1].send(msg)
         receiver[1].send(content)
+        print(msg, content)
 
 
 while True:
     conn, addr = s.accept()
     print('Connected by', addr)
-    t = serverThread(index, conn, addr)
+    t = serverThread(index, conn, addr, lock, lst)
     t.my_start()
     lst[index] = [t, conn, addr]
-    index += 1
+    while index in lst:
+        index %= 5
+        index += 1
